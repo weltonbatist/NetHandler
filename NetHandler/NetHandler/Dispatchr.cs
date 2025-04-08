@@ -15,7 +15,7 @@ public class Dispatchr : IDispatchr
     public async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         var handlerType = typeof(IRequestHandler<,>).MakeGenericType(request.GetType(), typeof(TResponse));
-        // Retorna o handler como objeto (evitando o dynamic aqui)
+        
         var handler = _serviceProvider.GetService(handlerType);
         if (handler == null)
         {
@@ -26,8 +26,7 @@ public class Dispatchr : IDispatchr
                 $"esteja registrado no container de injeção de dependência."
             );
         }
-
-        // Aqui garantimos que usamos a versão fortemente tipada para obter o tipo do handler
+        
         var invoker = _handlerCache.GetOrAdd(handler.GetType(), CreateHandlerInvoker);
         var result = await invoker(handler, request, cancellationToken);
         return (TResponse)result;
@@ -36,14 +35,13 @@ public class Dispatchr : IDispatchr
     // Cria um delegate que encapsula a chamada do método Handle do handler, evitando o uso repetido de reflection.
     private static Func<object, object, CancellationToken, Task<object>> CreateHandlerInvoker(Type handlerType)
     {
-        // Busca a interface IRequestHandler<TRequest, TResponse> implementada pelo handler.
         var handlerInterface = handlerType.GetInterfaces()
             .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>));
 
         if (handlerInterface == null)
             throw new InvalidOperationException("O handler não implementa IRequestHandler<TRequest, TResponse>.");
 
-        // Extrai o tipo do request (TRequest) a partir dos argumentos genéricos da interface.
+        
         var requestType = handlerInterface.GetGenericArguments()[0];
 
         // Procura o método "Handle" com os parâmetros (TRequest, CancellationToken)
@@ -56,11 +54,10 @@ public class Dispatchr : IDispatchr
         // Cria e retorna um delegate que invoca o método Handle via reflection.
         return async (handler, request, cancellationToken) =>
         {
-            // Invoca o método e aguarda a Task retornada.
+            
             var task = (Task)methodInfo.Invoke(handler, new object[] { request, cancellationToken });
             await task.ConfigureAwait(false);
-
-            // Se for Task<T>, acessa a propriedade "Result" para obter o valor de retorno.
+            
             var taskType = task.GetType();
             var resultProperty = taskType.GetProperty("Result");
             return resultProperty != null ? resultProperty.GetValue(task) : null;
