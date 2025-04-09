@@ -40,5 +40,42 @@ namespace NetHandler.Extensions
 
             return services;
         }
+        
+        /// <summary>
+        /// Registra o Dispatchr e os handlers explicitamente.
+        /// </summary>
+        /// <param name="services">O ServiceCollection onde os serviços serão registrados.</param>
+        /// <param name="handlerTypes">Os tipos dos handlers a serem registrados.</param>
+        /// <returns>O mesmo ServiceCollection para encadeamento de métodos.</returns>
+        public static IServiceCollection AddNetHandler(this IServiceCollection services, params Type[] handlerTypes)
+        {
+            services.AddSingleton<IDispatchr, Dispatchr>();
+
+            var handlerInterfaceType = typeof(IRequestHandler<,>);
+
+            foreach (var handlerType in handlerTypes)
+            {
+                if (!handlerType.IsClass || handlerType.IsAbstract)
+                    throw new ArgumentException($"O tipo '{handlerType.FullName}' deve ser uma classe concreta.", nameof(handlerTypes));
+
+                // Verifica se o tipo implementa pelo menos uma interface IRequestHandler<,>
+                var implementedInterfaces = handlerType.GetInterfaces()
+                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == handlerInterfaceType)
+                    .ToList();
+
+                if (!implementedInterfaces.Any())
+                {
+                    throw new ArgumentException($"O tipo '{handlerType.FullName}' não implementa IRequestHandler<TRequest, TResponse>.", nameof(handlerTypes));
+                }
+
+                // Registra o handler para cada interface que ele implementar
+                foreach (var handlerInterface in implementedInterfaces)
+                {
+                    services.AddTransient(handlerInterface, handlerType);
+                }
+            }
+
+            return services;
+        }
     }
 }
