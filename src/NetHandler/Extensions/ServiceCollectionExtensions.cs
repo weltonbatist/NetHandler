@@ -77,5 +77,67 @@ namespace NetHandler.Extensions
 
             return services;
         }
+        
+        /// <summary>
+        /// Registra automaticamente todos os notification handlers (INotificationHandler<TNotification>) dos assemblies informados.
+        /// </summary>
+        /// <param name="services">O ServiceCollection onde os serviços serão registrados.</param>
+        /// <param name="assemblies">Os assemblies onde serão procurados os notification handlers.</param>
+        /// <returns>O mesmo ServiceCollection para encadeamento de métodos.</returns>
+        public static IServiceCollection AddNetNotificationHandlers(this IServiceCollection services, params Assembly[] assemblies)
+        {
+            var notificationHandlerInterfaceType = typeof(INotificationHandler<>);
+            var notificationHandlerTypes = assemblies
+                .SelectMany(a => a.GetExportedTypes())
+                .Where(t => t.IsClass && !t.IsAbstract)
+                .Select(t => new
+                {
+                    Type = t,
+                    Interfaces = t.GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == notificationHandlerInterfaceType)
+                })
+                .Where(x => x.Interfaces.Any());
+
+            foreach (var handler in notificationHandlerTypes)
+            {
+                foreach (var handlerInterface in handler.Interfaces)
+                {
+                    services.AddTransient(handlerInterface, handler.Type);
+                }
+            }
+            return services;
+        }
+        
+        /// <summary>
+        /// Registra explicitamente os notification handlers fornecidos.
+        /// </summary>
+        /// <param name="services">O ServiceCollection onde os serviços serão registrados.</param>
+        /// <param name="handlerTypes">Os tipos dos notification handlers a serem registrados.</param>
+        /// <returns>O mesmo ServiceCollection para encadeamento de métodos.</returns>
+        public static IServiceCollection AddNetNotificationHandlers(this IServiceCollection services, params Type[] handlerTypes)
+        {
+            var notificationHandlerInterfaceType = typeof(INotificationHandler<>);
+
+            foreach (var handlerType in handlerTypes)
+            {
+                if (!handlerType.IsClass || handlerType.IsAbstract)
+                    throw new ArgumentException($"O tipo '{handlerType.FullName}' deve ser uma classe concreta.", nameof(handlerTypes));
+
+                var implementedInterfaces = handlerType.GetInterfaces()
+                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == notificationHandlerInterfaceType)
+                    .ToList();
+
+                if (!implementedInterfaces.Any())
+                {
+                    throw new ArgumentException($"O tipo '{handlerType.FullName}' não implementa INotificationHandler<TNotification>.", nameof(handlerTypes));
+                }
+
+                foreach (var handlerInterface in implementedInterfaces)
+                {
+                    services.AddTransient(handlerInterface, handlerType);
+                }
+            }
+
+            return services;
+        }
     }
 }
