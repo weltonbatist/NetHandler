@@ -4,6 +4,9 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Title>NetHandler</Title>
+        <RepositoryUrl>https://github.com/weltonbatist/NetHandler</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/weltonbatist/NetHandler</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
