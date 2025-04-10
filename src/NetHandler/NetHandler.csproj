@@ -7,9 +7,10 @@
         <Title>NetHandler</Title>
         <RepositoryUrl>https://github.com/weltonbatist/NetHandler</RepositoryUrl>
         <PackageProjectUrl>https://github.com/weltonbatist/NetHandler</PackageProjectUrl>
-        <Version>1.0.0</Version>
-        <Description>Biblioteca para implementar paddrão Mediator em .NET</Description>
+        <Version>1.0.1</Version>
+        <Description>Biblioteca para implementar padrão Mediator em .NET</Description>
         <Authors>Welton Batista</Authors>
+        <PackageReleaseNotes>Adicionado opcão de notificação em paralelo</PackageReleaseNotes>
     </PropertyGroup>
 
     <ItemGroup>
