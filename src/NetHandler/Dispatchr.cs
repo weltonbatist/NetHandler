@@ -60,14 +60,19 @@ namespace NetHandler
             };
         }
         
-        public async Task PublishAsync<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+        public async Task PublishAsync<TNotification>(TNotification notification, bool isParallel = false, CancellationToken cancellationToken = default)
             where TNotification : INotification
         {
            
             var handlers = _serviceProvider.GetServices<INotificationHandler<TNotification>>();
             if (handlers == null || !handlers.Any())
                 return;
-            
+
+            if (isParallel)
+            {
+                await Task.WhenAll(handlers.Select(h => h.Handle(notification, cancellationToken)));
+                return;
+            }
             foreach (var handler in handlers)
             {
                 await handler.Handle(notification, cancellationToken);
